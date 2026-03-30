@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>二次根式訓練助手</title>
+<title>二次根式化簡訓練助手</title>
 <style>
   *{box-sizing:border-box;font-family:Microsoft JhengHei,sans-serif}
   html,body{margin:0;padding:0;width:100%;height:100%;background:#f4f8ff;}
@@ -57,7 +57,7 @@
 <body>
 
 <div class="card">
-  <div class="title">二次根式訓練助手</div>
+  <div class="title">二次根式化簡訓練助手</div>
 
   <div class="input-row">
     <select id="className" onchange="updateStudentList()">
@@ -143,8 +143,6 @@ const studentData = {
   "S2E": [{"id":"1","name":"古浩言"},{"id":"2","name":"甘永誠"},{"id":"3","name":"伍彥臻"},{"id":"4","name":"何睿謙"},{"id":"5","name":"吳卓羲"},{"id":"6","name":"吳明軒"},{"id":"7","name":"吳泳恩"},{"id":"8","name":"李浩君"},{"id":"9","name":"李梓睿"},{"id":"10","name":"李穎詩"},{"id":"11","name":"林晞晴"},{"id":"12","name":"林紫淇"},{"id":"13","name":"侯晨睿"},{"id":"14","name":"帥恩昊"},{"id":"15","name":"高智立"},{"id":"16","name":"梁子豪"},{"id":"17","name":"梁敬業"},{"id":"18","name":"梁慶樂"},{"id":"19","name":"許振熙"},{"id":"20","name":"許嘉琪"},{"id":"21","name":"郭美晴"},{"id":"22","name":"陳俊霖"},{"id":"23","name":"陳冠旭"},{"id":"24","name":"陳思函"},{"id":"25","name":"陳衍葶"},{"id":"26","name":"陳駿暉"},{"id":"27","name":"彭芷茵"},{"id":"28","name":"黃卓謙"},{"id":"29","name":"楊雨晞"},{"id":"30","name":"楊美鈺"},{"id":"31","name":"楊添暉"},{"id":"32","name":"趙子傑"},{"id":"33","name":"劉馨琦"},{"id":"34","name":"潘偉濤"},{"id":"35","name":"蔡婧涵"}]
 };
 
-const squares = [1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121];
-
 function simplifyNumber(n) {
   if (n <= 0) return "0";
   let coeff = 1, radicand = n;
@@ -203,12 +201,20 @@ function genType3() {
   }
 }
 
+// 題型四全面升級：支援數字化簡後殘留於根號內
 function genType4() {
   const vars = ["a", "b", "c", "y"].sort(() => Math.random() - 0.5).slice(0, Math.floor(Math.random()*3)+1).sort();
-  let coeff = Math.sqrt(squares[Math.floor(Math.random()*squares.length)]);
-  let qIn = (coeff===1?"":coeff*coeff);
-  let out = (coeff===1?"":coeff.toString());
-  let inP = "";
+  
+  // 決定係數(開出來的數字)與殘留數(留在根號內的數字)
+  const coeff = Math.floor(Math.random() * 5) + 1; // 1~5
+  const leftovers = [1, 2, 3, 5, 6, 7, 10]; // 1代表根號內沒有額外的數字
+  const m = leftovers[Math.floor(Math.random() * leftovers.length)];
+  
+  const originalNum = (coeff * coeff) * m;
+  
+  let qIn = (originalNum === 1 ? "" : originalNum.toString());
+  let out = (coeff === 1 ? "" : coeff.toString());
+  let inP = (m === 1 ? "" : m.toString());
   
   vars.forEach(v => {
     let p = Math.floor(Math.random()*6)+2; 
@@ -218,7 +224,14 @@ function genType4() {
     if(iP>0) inP += v;
   });
   
-  ans = out + (inP ? "√"+inP : ""); 
+  // 若完全沒有係數跟變數 (防呆機制)
+  if (out === "" && inP === "") {
+    ans = "1";
+    qIn = "1";
+  } else {
+    ans = out + (inP ? "√"+inP : "");
+  }
+  
   return `√(${qIn})`;
 }
 
