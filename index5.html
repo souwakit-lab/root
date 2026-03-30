@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>二次根式化簡訓練助手</title>
+<style>
+  *{box-sizing:border-box;font-family:Microsoft JhengHei,sans-serif}
+  html,body{margin:0;padding:0;width:100%;height:100%;background:#f4f8ff;}
+  body{position:relative;padding:10px;}
+  .card{background:rgba(255,255,255,0.97);border-radius:20px;padding:16px;max-width:500px;width:100%;margin:0 auto;box-shadow:0 0 10px rgba(0,0,0,0.1);}
+  .title{text-align:center;font-size:22px;font-weight:bold;margin:10px 0 14px;}
+  .input-row{display:flex;gap:8px;margin-bottom:12px;width:100%;}
+  .input-row select,.input-row input{flex:1;padding:12px 6px;border-radius:10px;border:1px solid #ccc;font-size:15px;text-align:center;min-width:0;}
+  input#studentName{background:#f0f0f0;}
+  .start-btn{width:100%;padding:14px;background:#378cf9;color:white;border:none;border-radius:12px;font-size:18px;margin-bottom:12px;font-weight:bold;}
+  .start-btn:disabled{background:#ccc;}
+  .level{text-align:center;margin:10px 0;}
+  .level button{padding:10px 14px;margin:0 6px;border-radius:10px;border:none;background:#ddd;font-size:16px;line-height:1.3;}
+  .level .on{background:#378cf9;color:white;}
+  .info{display:flex;justify-content:space-between;margin:8px 0;font-size:15px;}
+  .msg{text-align:center;color:red;font-size:16px;height:24px;font-weight:bold;}
+  .q{text-align:center;font-size:32px;margin:25px 0;font-weight:bold;min-height:80px;}
+  #input{width:100%;padding:14px;text-align:center;border-radius:12px;border:2px solid #ccc;font-size:24px;margin-bottom:10px;}
+  .keypad{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:10px 0;}
+  .key{padding:16px 8px;border:none;border-radius:12px;background:#eef2f5;font-size:22px;}
+  .func{background:#d1f7e5;font-weight:bold;}
+  .btn-bar{display:flex;gap:10px;margin-top:12px;}
+  .btn-bar button{flex:1;padding:14px 8px;border:none;border-radius:12px;color:white;font-size:16px;font-weight:bold;}
+  .reset{background:#ff6666}
+  .ok{background:#378cf9}
+  .luck{background:#ffaa33}
+  .next{background:#33bb55}
+  .upload{background:#378cf9}
+</style>
+<!-- KaTeX 讓根號真正把數字包在裡面（81 會在根號內） -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+</head>
+<body>
+
+<div class="card">
+  <div class="title">二次根式化簡訓練助手</div>
+
+  <div class="input-row">
+    <select id="className" onchange="updateStudentList()">
+      <option value="">請選班別</option>
+      <option value="S2A">S2A</option>
+      <option value="S2B">S2B</option>
+      <option value="S2C">S2C</option>
+      <option value="S2D">S2D</option>
+      <option value="S2E">S2E</option>
+    </select>
+
+    <select id="studentId" onchange="autoFillName()" disabled>
+      <option value="">請選學號</option>
+    </select>
+
+    <input id="studentName" placeholder="姓名" disabled readonly>
+  </div>
+
+  <div class="level">
+    <button id="lv1" onclick="setLevel(1)">程度一<br>(直接開平方)</button>
+    <button id="lv2" onclick="setLevel(2)">程度二<br>(根式化簡)</button>
+    <button id="lv3" onclick="setLevel(3)">程度三<br>(根式乘法)</button>
+  </div>
+
+  <button class="start-btn" id="startBtn" onclick="startGame()" disabled>開始答題</button>
+
+  <div class="info">
+    <div>分數: <span id="score">0</span></div>
+    <div>幸運卡: <span id="luck">0</span>/2</div>
+  </div>
+  <div class="info">
+    <div>答對題數: <span id="correctCount">0</span></div>
+    <div>答對率: <span id="rate">0%</span></div>
+    <div>時間: <span id="time">00:00</span></div>
+  </div>
+
+  <div class="msg" id="msg"></div>
+  <div class="q" id="q"></div>
+  <input id="input" readonly>
+
+  <div class="keypad">
+    <button class="key func" onclick="insert('√')">√</button>
+    <button class="key" onclick="insert('a')">a</button>
+    <button class="key" onclick="insert('b')">b</button>
+    <button class="key" onclick="insert('c')">c</button>
+    <button class="key" onclick="insert('y')">y</button>
+    <button class="key" onclick="insert('7')">7</button>
+    <button class="key" onclick="insert('8')">8</button>
+    <button class="key" onclick="insert('9')">9</button>
+    <button class="key" onclick="insert('4')">4</button>
+    <button class="key" onclick="insert('5')">5</button>
+    <button class="key" onclick="insert('6')">6</button>
+    <button class="key" onclick="insert('(')">(</button>
+    <button class="key" onclick="insert('1')">1</button>
+    <button class="key" onclick="insert('2')">2</button>
+    <button class="key" onclick="insert('3')">3</button>
+    <button class="key" onclick="insert(')')">)</button>
+    <button class="key" onclick="insert('0')">0</button>
+    <button class="key" onclick="insert('×')">×</button>
+    <button class="key" style="visibility:hidden"></button>
+    <button class="key" style="visibility:hidden"></button>
+  </div>
+
+  <div class="btn-bar">
+    <button class="reset" onclick="del()">清除</button>
+    <button class="ok" onclick="check()">確認</button>
+    <button class="luck" onclick="useLuck()">使用幸運卡</button>
+    <button class="upload" onclick="uploadScore()">上傳分數</button>
+    <button class="nextBtn" id="nextBtn" onclick="next()" style="display:none">下一題</button>
+  </div>
+</div>
+
+<script>
+let score = 0;
+let luck = 0;
+let level = null;
+let ans = "";
+let currentMul = 1;
+let locked = false;
+let gameStarted = false;
+
+let totalQ = 0;
+let correctQ = 0;
+let streak = 0;
+
+let startTime = null;
+let timer = null;
+let lastUpload = 0;
+
+const studentData = {
+  "S2D": [{"id":"1","name":"何俊文"},{"id":"2","name":"何曉"},{"id":"3","name":"何鴻澎"},{"id":"4","name":"余敬燊"},{"id":"5","name":"呂家浩"},{"id":"6","name":"李佳玥"},{"id":"7","name":"李卓軒"},{"id":"8","name":"林永鴻"},{"id":"9","name":"林芯瑩"},{"id":"10","name":"林鈴惠"},{"id":"11","name":"林嘉怡"},{"id":"12","name":"林駿業"},{"id":"13","name":"施俊升"},{"id":"14","name":"高詠晴"},{"id":"15","name":"郭子熙"},{"id":"16","name":"陳曉瑩"},{"id":"17","name":"琪旂"},{"id":"18","name":"馮蕙妍"},{"id":"19","name":"黃辰鉉"},{"id":"20","name":"黃宗澤"},{"id":"21","name":"黃婉瑤"},{"id":"22","name":"黃竣顥"},{"id":"23","name":"黃紫翹"},{"id":"24","name":"黃麗蕓"},{"id":"25","name":"葉曉臻"},{"id":"26","name":"劉益菲"},{"id":"27","name":"劉駿龍"},{"id":"28","name":"歐子曦"},{"id":"29","name":"鄧梓俊"},{"id":"30","name":"鄧梓軒"},{"id":"31","name":"鄭宇軒"},{"id":"32","name":"鄭裕馨"},{"id":"33","name":"謝志強"},{"id":"34","name":"蘇鑫陽"}],
+  "S2A": [{"id":"1","name":"何芯儀"},{"id":"2","name":"余佳倚"},{"id":"3","name":"李圳銘"},{"id":"4","name":"李欣澄"},{"id":"5","name":"李芷欣"},{"id":"6","name":"周曉君"},{"id":"7","name":"林宇鋒"},{"id":"8","name":"林宇蕎"},{"id":"9","name":"林汶錛"},{"id":"10","name":"林梓言"},{"id":"11","name":"張子凡"},{"id":"12","name":"梁得志"},{"id":"13","name":"梁凱嵐"},{"id":"14","name":"梁煒煒"},{"id":"15","name":"梁銀嫦"},{"id":"16","name":"梁諾瞳"},{"id":"17","name":"梁駿濠"},{"id":"18","name":"梁耀軒"},{"id":"19","name":"許璟辰"},{"id":"20","name":"陳欣怡"},{"id":"21","name":"陳浩銘"},{"id":"22","name":"湯明軒"},{"id":"23","name":"黃宗盛"},{"id":"24","name":"黃紫瀅"},{"id":"25","name":"詹堯軒"},{"id":"26","name":"雷梓昇"},{"id":"27","name":"趙子韜"},{"id":"28","name":"劉蜜莉"},{"id":"29","name":"歐陽杰枝"},{"id":"30","name":"蔡文立"},{"id":"31","name":"蔣俊杰"},{"id":"32","name":"戴珮淇"},{"id":"33","name":"戴靖峰"},{"id":"34","name":"謝祖盛"},{"id":"35","name":"譚凱胤"}],
+  "S2B": [{"id":"1","name":"朱偉軒"},{"id":"2","name":"何心怡"},{"id":"3","name":"何卓泳"},{"id":"4","name":"何嘉俊"},{"id":"5","name":"吳雪凝"},{"id":"6","name":"李婧雯"},{"id":"7","name":"卓宸億"},{"id":"8","name":"侯詠婷"},{"id":"9","name":"洪浩昌"},{"id":"10","name":"洪嘉昇"},{"id":"11","name":"胡澤琛"},{"id":"12","name":"席俊龍"},{"id":"13","name":"徐浩龍"},{"id":"14","name":"袁承志"},{"id":"15","name":"高梓然"},{"id":"16","name":"張欣然"},{"id":"17","name":"梁家昊"},{"id":"18","name":"畢嘉銃"},{"id":"19","name":"莫津燁"},{"id":"20","name":"許芯怡"},{"id":"21","name":"郭朗庭"},{"id":"22","name":"陳惠研"},{"id":"23","name":"黃至鑫"},{"id":"24","name":"黃琳琳"},{"id":"25","name":"黃詠如"},{"id":"26","name":"楊美鈴"},{"id":"27","name":"趙子朗"},{"id":"28","name":"劉凱鵬"},{"id":"29","name":"潘語瑩"},{"id":"30","name":"蔡奕晟"},{"id":"31","name":"顏成昌"},{"id":"32","name":"譚雪"},{"id":"33","name":"譚源深"},{"id":"34","name":"關嘉雯"},{"id":"35","name":"關騰皓"}],
+  "S2C": [{"id":"1","name":"何曉臻"},{"id":"2","name":"吳俊涵"},{"id":"3","name":"李其峻"},{"id":"4","name":"李紫柔"},{"id":"5","name":"李詩韻"},{"id":"6","name":"林筠浩"},{"id":"7","name":"袁敬曦"},{"id":"8","name":"張凱琳"},{"id":"9","name":"曹俊銘"},{"id":"10","name":"梁峻豪"},{"id":"11","name":"梁浩源"},{"id":"12","name":"梁曼華"},{"id":"13","name":"梁雅晴"},{"id":"14","name":"郭熹霖"},{"id":"15","name":"陳芷熒"},{"id":"16","name":"陳俊昊"},{"id":"17","name":"陳震博"},{"id":"18","name":"陳穎妍"},{"id":"19","name":"陳駿愷"},{"id":"20","name":"黃啓康"},{"id":"21","name":"黃博毅"},{"id":"22","name":"黃智銘"},{"id":"23","name":"黃敬東"},{"id":"24","name":"黃靖儀"},{"id":"25","name":"黃樂軒"},{"id":"26","name":"趙康淇"},{"id":"27","name":"劉子騫"},{"id":"28","name":"歐陽綺瞳"},{"id":"29","name":"潘錦輝"},{"id":"30","name":"蔡梓澄"},{"id":"31","name":"鄭奕烽"},{"id":"32","name":"黎俊彥"},{"id":"33","name":"鍾浩然"},{"id":"34","name":"羅日鑫"},{"id":"35","name":"譚靖瑜"}],
+  "S2E": [{"id":"1","name":"古浩言"},{"id":"2","name":"甘永誠"},{"id":"3","name":"伍彥臻"},{"id":"4","name":"何睿謙"},{"id":"5","name":"吳卓羲"},{"id":"6","name":"吳明軒"},{"id":"7","name":"吳泳恩"},{"id":"8","name":"李浩君"},{"id":"9","name":"李梓睿"},{"id":"10","name":"李穎詩"},{"id":"11","name":"林晞晴"},{"id":"12","name":"林紫淇"},{"id":"13","name":"侯晨睿"},{"id":"14","name":"帥恩昊"},{"id":"15","name":"高智立"},{"id":"16","name":"梁子豪"},{"id":"17","name":"梁敬業"},{"id":"18","name":"梁慶樂"},{"id":"19","name":"許振熙"},{"id":"20","name":"許嘉琪"},{"id":"21","name":"郭美晴"},{"id":"22","name":"陳俊霖"},{"id":"23","name":"陳冠旭"},{"id":"24","name":"陳思函"},{"id":"25","name":"陳衍葶"},{"id":"26","name":"陳駿暉"},{"id":"27","name":"彭芷茵"},{"id":"28","name":"黃卓謙"},{"id":"29","name":"楊雨晞"},{"id":"30","name":"楊美鈺"},{"id":"31","name":"楊添暉"},{"id":"32","name":"趙子傑"},{"id":"33","name":"劉馨琦"},{"id":"34","name":"潘偉濤"},{"id":"35","name":"蔡婧涵"}]
+};
+
+const squares = [1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121];
+
+function simplifyNumber(n) {
+  if (n <= 0) return "0";
+  let coeff = 1;
+  let radicand = n;
+  for (let i = 2; i * i <= radicand; i++) {
+    while (radicand % (i * i) === 0) {
+      coeff *= i;
+      radicand /= (i * i);
+    }
+  }
+  if (radicand === 1) return coeff.toString();
+  return (coeff === 1 ? "" : coeff) + "√" + radicand;
+}
+
+function hasOnlySmallPrimes(n) {
+  if (n < 2) return false;
+  const smallPrimes = [2, 3, 5, 7, 11];
+  for (let p of smallPrimes) {
+    while (n % p === 0) n /= p;
+  }
+  return n === 1;
+}
+
+function getRadicand(str) {
+  if (!str.includes("√")) return 1;
+  return parseInt(str.split("√")[1]) || 1;
+}
+
+function genType1() {
+  const k = Math.floor(Math.random() * 20) + 1;
+  const n = k * k;
+  ans = k.toString();
+  return `√(${n})`;                     // 81 明確在根號內
+}
+
+function genType2() {   // 程度二：根式化簡
+  const r = Math.random();
+  if (r < 0.4) {
+    const sq = squares[Math.floor(Math.random() * squares.length)];
+    let extra = 1;
+    if (Math.random() < 0.7) {
+      const smallPrimes = [2, 3, 5, 7, 11];
+      extra = smallPrimes[Math.floor(Math.random() * smallPrimes.length)];
+    }
+    const n = sq * extra;
+    ans = simplifyNumber(n);
+    return `√(${n})`;                   // 數字明確在根號內
+  } else if (r < 0.7) {
+    const mSq = squares[Math.floor(Math.random() * squares.length)];
+    const nSq = squares[Math.floor(Math.random() * squares.length)];
+    ans = simplifyNumber(mSq * nSq);
+    return `√(${mSq})×${nSq}`;
+  } else {
+    const vars = ["y", "a", "b", "c"];
+    const v = vars[Math.floor(Math.random() * vars.length)];
+    const kSq = squares[Math.floor(Math.random() * squares.length)];
+    const k = Math.sqrt(kSq);
+    if (Math.random() < 0.6) {
+      ans = `${k}√${v}`;
+      return `√(${kSq}${v})`;
+    } else {
+      const powC = Math.random() < 0.5 ? 3 : 1;
+      ans = `4ab${powC === 3 ? "c√c" : "√c"}`;
+      return `√(16a²b²c${powC === 3 ? "³" : ""})`;
+    }
+  }
+}
+
+function genType3() {   // 程度三：根式乘法
+  let attempts = 0;
+  while (attempts < 100) {
+    attempts++;
+    const r = Math.random();
+    let qText, simplified;
+    if (r < 0.5) {
+      let a, b;
+      do { a = Math.floor(Math.random() * 36) + 2; } while (!hasOnlySmallPrimes(a));
+      do { b = Math.floor(Math.random() * 36) + 2; } while (!hasOnlySmallPrimes(b));
+      qText = `√${a} × √${b}`;
+      simplified = simplifyNumber(a * b);
+    } else {
+      const k = Math.floor(Math.random() * 5) + 2;
+      let p, q;
+      do { p = Math.floor(Math.random() * 36) + 2; } while (!hasOnlySmallPrimes(p));
+      do { q = Math.floor(Math.random() * 36) + 2; } while (!hasOnlySmallPrimes(q));
+      qText = `${k}√${p} × √${q}`;
+      simplified = simplifyNumber(k * k * p * q);
+    }
+    if (getRadicand(simplified) <= 100) {
+      ans = simplified;
+      return qText;
+    }
+  }
+  ans = "6";
+  return "√36";
+}
+
+function genQ() {
+  if (level === 1) return genType1();
+  if (level === 2) return genType2();
+  return genType3();
+}
+
+function toLatex(text) {
+  return text
+    .replace(/√/g, '\\sqrt{')
+    .replace(/×/g, '\\times ')
+    .replace(/\(/g, '{')
+    .replace(/\)/g, '}');
+}
+
+function updateStartBtn() {
+  const c = document.getElementById("className").value.trim();
+  const i = document.getElementById("studentId").value.trim();
+  const n = document.getElementById("studentName").value.trim();
+  const btn = document.getElementById("startBtn");
+  btn.disabled = !(c && i && n && level !== null);
+}
+
+function updateStudentList() {
+  const cname = document.getElementById("className").value;
+  const sel = document.getElementById("studentId");
+  const nameInput = document.getElementById("studentName");
+
+  sel.innerHTML = '<option value="">請選學號</option>';
+  nameInput.value = "";
+
+  if (!cname) {
+    sel.disabled = true;
+    updateStartBtn();
+    return;
+  }
+
+  sel.disabled = false;
+  const list = studentData[cname] || [];
+  list.forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s.id;
+    opt.textContent = s.id;
+    sel.appendChild(opt);
+  });
+  updateStartBtn();
+}
+
+function autoFillName() {
+  const cname = document.getElementById("className").value;
+  const sid = document.getElementById("studentId").value;
+  const list = studentData[cname] || [];
+  const stu = list.find(s => s.id === sid);
+  document.getElementById("studentName").value = stu ? stu.name : "";
+  updateStartBtn();
+}
+
+function setLevel(n) {
+  if (gameStarted) return;
+  level = n;
+  document.getElementById("lv1").classList.toggle("on", level === 1);
+  document.getElementById("lv2").classList.toggle("on", level === 2);
+  document.getElementById("lv3").classList.toggle("on", level === 3);
+  updateStartBtn();
+}
+
+function startTimer() {
+  if (startTime) return;
+  startTime = Date.now();
+  timer = setInterval(updateTime, 1000);
+}
+
+function updateTime() {
+  if (!startTime) return;
+  const sec = Math.floor((Date.now() - startTime) / 1000);
+  const m = String(Math.floor(sec / 60)).padStart(2, '0');
+  const s = String(sec % 60).padStart(2, '0');
+  document.getElementById("time").textContent = `${m}:${s}`;
+}
+
+function getTotalSec() {
+  return startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
+}
+
+function startGame() {
+  gameStarted = true;
+  startTimer();
+  document.getElementById("className").disabled = true;
+  document.getElementById("studentId").disabled = true;
+  document.getElementById("studentName").disabled = true;
+  document.getElementById("startBtn").disabled = true;
+  next();
+}
+
+function useLuck() {
+  if (!gameStarted || luck < 1 || locked) return;
+  luck--;
+  currentMul = Math.random() < 0.5 ? 2 : 3;
+  showMsg("幸運卡生效！本題 ×" + currentMul);
+  next();
+  update();
+}
+
+function insert(v){ if(locked||!gameStarted) return; document.getElementById("input").value += v; }
+function del(){ if(locked||!gameStarted) return; document.getElementById("input").value = ""; }
+
+function next() {
+  locked = false;
+  document.getElementById("nextBtn").style.display = "none";
+  const qText = genQ() + " = ?";
+  document.getElementById("q").innerHTML = "";
+  try {
+    katex.render(toLatex(qText), document.getElementById("q"), {throwOnError: false});
+  } catch(e) {
+    document.getElementById("q").textContent = qText;
+  }
+  del();
+  update();
+}
+
+function showMsg(text) {
+  const dom = document.getElementById("msg");
+  dom.textContent = text;
+  if (text.startsWith("正確")) {
+    setTimeout(() => { dom.textContent = ""; }, 1500);
+  }
+}
+
+function update() {
+  document.getElementById("score").textContent = score;
+  document.getElementById("luck").textContent = luck;
+  document.getElementById("correctCount").textContent = correctQ;
+  const rate = totalQ === 0 ? 0 : Math.round(correctQ / totalQ * 100);
+  document.getElementById("rate").textContent = rate + "%";
+}
+
+function addLuck() {
+  if (luck < 2) {
+    luck++;
+    showMsg("幸運卡 +1！");
+  }
+}
+
+function check() {
+  if(locked||!gameStarted) return;
+  const val = document.getElementById("input").value.trim();
+  const mul = currentMul;
+
+  totalQ++;
+
+  if (val === ans) {
+    correctQ++;
+    streak++;
+    score = Math.max(0, score + 1 * mul);
+    showMsg("正確！ +" + mul);
+
+    if (streak >= 3) addLuck();
+    if (correctQ % 15 === 0) addLuck();
+
+    setTimeout(() => { next(); }, 1500);
+  } else {
+    streak = 0;
+    score = Math.max(0, score - 1 * mul);
+    showMsg("答錯：" + ans);
+    if (Math.random() < 0.1) addLuck();
+
+    locked = true;
+    document.getElementById("nextBtn").style.display = "block";
+  }
+
+  currentMul = 1;
+  update();
+}
+
+function uploadScore() {
+  if (!gameStarted) {
+    alert("請先開始答題");
+    return;
+  }
+  if (Date.now() - lastUpload < 5000) {
+    alert("上傳過於頻繁，請稍後再試");
+    return;
+  }
+
+  const className = document.getElementById("className").value.trim();
+  const studentId = document.getElementById("studentId").value.trim();
+  const studentName = document.getElementById("studentName").value.trim();
+  const scoreValue = score;
+  const correctValue = correctQ;
+  const rateValue = totalQ === 0 ? "0" : (correctQ / totalQ * 100).toFixed(1);
+  const levelValue = level === 1 ? "程度一" : level === 2 ? "程度二" : "程度三";
+  const timeSecValue = getTotalSec();
+
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbyHFGxezML6QQsxvYDIR7t9nx28549ZcxukGITGCpSTH0dmJAYnOIcypGZrJKWELSUl/exec";
+
+  const data = {
+    action: "saveScore",
+    className: className,
+    studentId: studentId,
+    studentName: studentName,
+    score: scoreValue,
+    correct: correctValue,
+    rate: rateValue,
+    level: levelValue,
+    timeSec: timeSecValue
+  };
+
+  fetch(GAS_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  })
+  .then(() => {
+    alert("上傳成功！\n\n班級：" + className +
+          "\n學號：" + studentId +
+          "\n姓名：" + studentName +
+          "\n分數：" + scoreValue +
+          "\n答對題數：" + correctValue +
+          "\n答對率：" + rateValue + "%");
+    lastUpload = Date.now();
+  })
+  .catch(() => {
+    alert("上傳失敗，請檢查網路");
+  });
+}
+</script>
+</body>
+</html>
