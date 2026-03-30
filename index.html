@@ -15,23 +15,41 @@
   input#studentName{background:#f0f0f0;}
   .start-btn{width:100%;padding:14px;background:#378cf9;color:white;border:none;border-radius:12px;font-size:18px;margin-bottom:12px;font-weight:bold;}
   .start-btn:disabled{background:#ccc;}
-  .level{text-align:center;margin:10px 0;}
-  .level button{padding:10px 14px;margin:0 6px;border-radius:10px;border:none;background:#ddd;font-size:16px;line-height:1.3;}
+  
+  .level{display:flex;gap:6px;margin:10px 0;}
+  .level button{flex:1;padding:8px 0;margin:0;border-radius:10px;border:none;background:#ddd;font-size:14px;line-height:1.3;}
   .level .on{background:#378cf9;color:white;}
+  
   .info{display:flex;justify-content:space-between;margin:8px 0;font-size:15px;}
   .msg{text-align:center;color:red;font-size:16px;height:24px;font-weight:bold;}
-  .q{text-align:center;font-size:32px;margin:25px 0;font-weight:bold;min-height:80px;}
-  #input{width:100%;padding:14px;text-align:center;border-radius:12px;border:2px solid #ccc;font-size:24px;margin-bottom:10px;}
+  .q{text-align:center;font-size:32px;margin:25px 0;font-weight:bold;min-height:80px; display:flex; align-items:center; justify-content:center;}
+  
+  .math-input {
+    width: 100%;
+    padding: 14px;
+    text-align: center;
+    border-radius: 12px;
+    border: 2px solid #378cf9;
+    font-size: 28px;
+    margin-bottom: 10px;
+    min-height: 64px;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-x: auto;
+  }
+
   .keypad{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:10px 0;}
   .key{padding:16px 8px;border:none;border-radius:12px;background:#eef2f5;font-size:22px;}
   .func{background:#d1f7e5;font-weight:bold;}
-  .btn-bar{display:flex;gap:10px;margin-top:12px;}
-  .btn-bar button{flex:1;padding:14px 8px;border:none;border-radius:12px;color:white;font-size:16px;font-weight:bold;}
+  .btn-bar{display:flex;gap:8px;margin-top:12px;}
+  .btn-bar button{flex:1;padding:14px 4px;border:none;border-radius:12px;color:white;font-size:15px;font-weight:bold;}
   .reset{background:#ff6666}
   .ok{background:#378cf9}
   .luck{background:#ffaa33}
-  .next{background:#33bb55}
-  .upload{background:#378cf9}
+  .nextBtn{background:#33bb55}
+  .upload{background:#6c757d}
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
@@ -59,10 +77,10 @@
   </div>
 
   <div class="level">
-    <button id="lv1" onclick="setLevel(1)">程度一<br>(直接開平方)</button>
-    <button id="lv2" onclick="setLevel(2)">程度二<br>(平方計算)</button>
-    <button id="lv3" onclick="setLevel(3)">程度三<br>(根式乘法)</button>
-    <button id="lv4" onclick="setLevel(4)">程度四<br>(根式化簡)</button>
+    <button id="lv1" onclick="setLevel(1)">題型一<br>開平方</button>
+    <button id="lv2" onclick="setLevel(2)">題型二<br>平方計算</button>
+    <button id="lv3" onclick="setLevel(3)">題型三<br>根式乘法</button>
+    <button id="lv4" onclick="setLevel(4)">題型四<br>根式化簡</button>
   </div>
 
   <button class="start-btn" id="startBtn" onclick="startGame()" disabled>開始答題</button>
@@ -79,7 +97,8 @@
 
   <div class="msg" id="msg"></div>
   <div class="q" id="q"></div>
-  <input id="input" readonly>
+  
+  <div id="input-display" class="math-input"><span style="color:#ccc; font-size:18px;">請輸入答案...</span></div>
 
   <div class="keypad">
     <button class="key func" onclick="insert('√')">√</button>
@@ -98,37 +117,23 @@
     <button class="key" onclick="insert('2')">2</button>
     <button class="key" onclick="insert('3')">3</button>
     <button class="key" onclick="insert(')')">)</button>
-    <button class="key" onclick="insert('0')">0</button>
-    <button class="key" onclick="insert('×')">×</button>
-    <button class="key" style="visibility:hidden"></button>
-    <button class="key" style="visibility:hidden"></button>
+    <button class="key" style="grid-column: span 2;" onclick="insert('0')">0</button>
+    <button class="key func" onclick="insert('^')">xⁿ</button>
+    <button class="key" style="background:#ff9999" onclick="backspace()">⌫</button>
   </div>
 
   <div class="btn-bar">
-    <button class="reset" onclick="del()">清除</button>
+    <button class="upload" onclick="uploadScore()">上傳</button>
+    <button class="luck" onclick="useLuck()">幸運卡</button>
+    <button class="reset" onclick="clearAll()">清空</button>
     <button class="ok" onclick="check()">確認</button>
-    <button class="luck" onclick="useLuck()">使用幸運卡</button>
-    <button class="upload" onclick="uploadScore()">上傳分數</button>
     <button class="nextBtn" id="nextBtn" onclick="next()" style="display:none">下一題</button>
   </div>
 </div>
 
 <script>
-let score = 0;
-let luck = 0;
-let level = null;
-let ans = "";
-let currentMul = 1;
-let locked = false;
-let gameStarted = false;
-
-let totalQ = 0;
-let correctQ = 0;
-let streak = 0;
-
-let startTime = null;
-let timer = null;
-let lastUpload = 0;
+let score = 0, luck = 0, level = null, ans = "", currentMul = 1, locked = false, gameStarted = false;
+let totalQ = 0, correctQ = 0, streak = 0, startTime = null, timer = null, lastUpload = 0, currentInput = "";
 
 const studentData = {
   "S2D": [{"id":"1","name":"何俊文"},{"id":"2","name":"何曉"},{"id":"3","name":"何鴻澎"},{"id":"4","name":"余敬燊"},{"id":"5","name":"呂家浩"},{"id":"6","name":"李佳玥"},{"id":"7","name":"李卓軒"},{"id":"8","name":"林永鴻"},{"id":"9","name":"林芯瑩"},{"id":"10","name":"林鈴惠"},{"id":"11","name":"林嘉怡"},{"id":"12","name":"林駿業"},{"id":"13","name":"施俊升"},{"id":"14","name":"高詠晴"},{"id":"15","name":"郭子熙"},{"id":"16","name":"陳曉瑩"},{"id":"17","name":"琪旂"},{"id":"18","name":"馮蕙妍"},{"id":"19","name":"黃辰鉉"},{"id":"20","name":"黃宗澤"},{"id":"21","name":"黃婉瑤"},{"id":"22","name":"黃竣顥"},{"id":"23","name":"黃紫翹"},{"id":"24","name":"黃麗蕓"},{"id":"25","name":"葉曉臻"},{"id":"26","name":"劉益菲"},{"id":"27","name":"劉駿龍"},{"id":"28","name":"歐子曦"},{"id":"29","name":"鄧梓俊"},{"id":"30","name":"鄧梓軒"},{"id":"31","name":"鄭宇軒"},{"id":"32","name":"鄭裕馨"},{"id":"33","name":"謝志強"},{"id":"34","name":"蘇鑫陽"}],
@@ -142,13 +147,9 @@ const squares = [1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121];
 
 function simplifyNumber(n) {
   if (n <= 0) return "0";
-  let coeff = 1;
-  let radicand = n;
+  let coeff = 1, radicand = n;
   for (let i = 2; i * i <= radicand; i++) {
-    while (radicand % (i * i) === 0) {
-      coeff *= i;
-      radicand /= (i * i);
-    }
+    while (radicand % (i * i) === 0) { coeff *= i; radicand /= (i * i); }
   }
   if (radicand === 1) return coeff.toString();
   return (coeff === 1 ? "" : coeff) + "√" + radicand;
@@ -163,109 +164,198 @@ function hasOnlySmallPrimes(n) {
   return n === 1;
 }
 
-function genType1() {
-  const k = Math.floor(Math.random() * 20) + 1;
-  const n = k * k;
-  ans = k.toString();
-  return `√(${n})`;
+function genType1() { 
+  let k = Math.floor(Math.random()*20)+1; 
+  ans = k.toString(); 
+  return `√(${k*k})`; 
 }
 
-function genType2() {   // 程度二：(k√m)^2
-  const k = Math.floor(Math.random() * 5) + 1;
-  let m;
-  do { m = Math.floor(Math.random() * 36) + 2; } while (!hasOnlySmallPrimes(m));
-  ans = (k * k * m).toString();
-  return `(${k}√(${m}))²`;
+function genType2() { 
+  let k = Math.floor(Math.random()*5)+1;
+  let m = Math.floor(Math.random()*8)+2; 
+  ans = (k*k*m).toString(); 
+  return (k===1) ? `(\\sqrt{${m}})^2` : `(${k}\\sqrt{${m}})^2`; 
 }
 
-function genType3() {   // 程度三：根式乘法
-  let attempts = 0;
-  while (attempts < 100) {
-    attempts++;
-    const r = Math.random();
-    let qText, simplified;
-    if (r < 0.5) {
-      let a, b;
-      do { a = Math.floor(Math.random() * 36) + 2; } while (!hasOnlySmallPrimes(a));
-      do { b = Math.floor(Math.random() * 36) + 2; } while (!hasOnlySmallPrimes(b));
-      qText = `√(${a}) × √(${b})`;
-      simplified = simplifyNumber(a * b);
-    } else {
-      const k = Math.floor(Math.random() * 5) + 2;
-      let p, q;
-      do { p = Math.floor(Math.random() * 36) + 2; } while (!hasOnlySmallPrimes(p));
-      do { q = Math.floor(Math.random() * 36) + 2; } while (!hasOnlySmallPrimes(q));
-      qText = `${k}√(${p}) × √(${q})`;
-      simplified = simplifyNumber(k * k * p * q);
-    }
-    if (getRadicand(simplified) <= 100) {
-      ans = simplified;
-      return qText;
-    }
-  }
-  ans = "6";
-  return "√(36)";
-}
-
-function genType4() {   // 程度四：根式化簡
-  const r = Math.random();
-  if (r < 0.4) {
-    const sq = squares[Math.floor(Math.random() * squares.length)];
-    let extra = 1;
-    if (Math.random() < 0.7) {
-      const smallPrimes = [2, 3, 5, 7, 11];
-      extra = smallPrimes[Math.floor(Math.random() * smallPrimes.length)];
-    }
-    const n = sq * extra;
-    ans = simplifyNumber(n);
-    return `√(${n})`;
-  } else if (r < 0.7) {
-    const mSq = squares[Math.floor(Math.random() * squares.length)];
-    const nSq = squares[Math.floor(Math.random() * squares.length)];
-    ans = simplifyNumber(mSq * nSq);
-    return `√(${mSq})×${nSq}`;
+function genType3() {
+  const type = Math.floor(Math.random()*3);
+  if (type === 0) {
+    let a, b;
+    do { a = Math.floor(Math.random()*36)+2; } while (!hasOnlySmallPrimes(a));
+    do { b = Math.floor(Math.random()*36)+2; } while (!hasOnlySmallPrimes(b));
+    ans = simplifyNumber(a * b);
+    return `√(${a}) × √(${b})`;
+  } else if (type === 1) {
+    const q = Math.floor(Math.random()*9)+2;
+    const m = Math.floor(Math.random()*9)+2;
+    const p = q * m;
+    const k = Math.floor(Math.random()*4)+2;
+    ans = simplifyNumber(k * k * m);
+    return `${k}√(${p}) × √(\\frac{1}{${q}})`;
   } else {
-    const vars = ["y", "a", "b", "c"];
-    const v = vars[Math.floor(Math.random() * vars.length)];
-    const kSq = squares[Math.floor(Math.random() * squares.length)];
-    const k = Math.sqrt(kSq);
-    if (Math.random() < 0.6) {
-      ans = `${k}√${v}`;
-      return `√(${kSq}${v})`;
-    } else {
-      const powC = Math.random() < 0.5 ? 3 : 1;
-      ans = `4ab${powC === 3 ? "c√c" : "√c"}`;
-      return `√(16a²b²c${powC === 3 ? "³" : ""})`;
-    }
+    const s = Math.floor(Math.random()*3)+2;
+    const q = s * s;
+    const c = Math.floor(Math.random()*4)+1;
+    const k = c * s;
+    const p = Math.floor(Math.random()*20)+2;
+    ans = simplifyNumber(c * c * p);
+    return `${k}√(${p}) × √(\\frac{1}{${q}})`;
   }
 }
 
-function getRadicand(str) {
-  if (!str.includes("√")) return 1;
-  return parseInt(str.split("√")[1]) || 1;
+function genType4() {
+  const vars = ["a", "b", "c", "y"].sort(() => Math.random() - 0.5).slice(0, Math.floor(Math.random()*3)+1).sort();
+  let coeff = Math.sqrt(squares[Math.floor(Math.random()*squares.length)]);
+  let qIn = (coeff===1?"":coeff*coeff);
+  let out = (coeff===1?"":coeff.toString());
+  let inP = "";
+  
+  vars.forEach(v => {
+    let p = Math.floor(Math.random()*6)+2; 
+    qIn += v + "^" + p;
+    let oP = Math.floor(p/2), iP = p%2;
+    if(oP>0) out += (oP===1?v:v+"^"+oP);
+    if(iP>0) inP += v;
+  });
+  
+  ans = out + (inP ? "√"+inP : ""); 
+  return `√(${qIn})`;
 }
 
-function genQ() {
-  if (level === 1) return genType1();
-  if (level === 2) return genType2();
-  if (level === 3) return genType3();
-  return genType4();
+function toLatex(raw) {
+  if (!raw) return "";
+  let s = raw.replace(/√\(([^)]+)\)/g, "\\sqrt{$1}")
+             .replace(/√([a-z0-9^]+)/g, "\\sqrt{$1}")
+             .replace(/\^([0-9]+)/g, "^{$1}")
+             .replace(/×/g, "\\times ");
+  return s;
 }
 
-function toLatex(text) {
-  return text
-    .replace(/\)²/g, '}^{2}')      // 先處理平方符號
-    .replace(/√\(/g, '\\sqrt{')    // 再處理根號
-    .replace(/\)/g, '}')           // 最後處理其餘的 )
-    .replace(/×/g, '\\times ');
+function renderInput() {
+  const div = document.getElementById("input-display");
+  if (!currentInput) { 
+    div.innerHTML = '<span style="color:#ccc; font-size:18px;">請輸入答案...</span>'; 
+    return; 
+  }
+  try {
+    katex.render(toLatex(currentInput), div, { throwOnError: false });
+  } catch(e) {
+    div.textContent = currentInput;
+  }
+}
+
+function normalizeStr(str) {
+  if (!str || str.trim() === "") return "EMPTY_INPUT"; 
+  let s = str.replace(/\^1(?!\d)/g, "");
+  let parts = s.split("√"), out = parts[0] || "", inn = parts[1] || "";
+  
+  const process = (p) => {
+    if (!p) return "";
+    if (/[a-z][0-9]/.test(p)) return "INVALID_FORMAT";
+    let n = (p.match(/^\d+/) || [""])[0];
+    let v = (p.match(/[a-z](\^\d+)?/g) || []).sort().join("");
+    return ((n==="1" && v!=="") ? "" : n) + v;
+  };
+  
+  return process(out) + (parts.length > 1 ? "√" + process(inn) : "");
+}
+
+function insert(v) { 
+  if(locked || !gameStarted) return; 
+  currentInput += v; 
+  renderInput(); 
+}
+function backspace() { 
+  if(locked || !gameStarted || currentInput.length === 0) return; 
+  currentInput = currentInput.slice(0,-1); 
+  renderInput(); 
+}
+function clearAll() { 
+  if(locked || !gameStarted) return; 
+  currentInput = ""; 
+  renderInput(); 
+}
+
+function check() {
+  if (locked || !gameStarted) return;
+  totalQ++;
+  let userNorm = normalizeStr(currentInput), ansNorm = normalizeStr(ans);
+  
+  if (userNorm === ansNorm && userNorm !== "EMPTY_INPUT") {
+    score = Math.max(0, score + currentMul); 
+    correctQ++; 
+    streak++;
+    document.getElementById("msg").textContent = "正確！ +" + currentMul;
+    
+    let gotLuck = false;
+    if (streak >= 3 && Math.random() < 0.5) {
+      gotLuck = true;
+    } else if (streak === 2 && Math.random() < 0.1) {
+      gotLuck = true;
+    }
+    
+    if (gotLuck && luck < 2) { 
+      luck++; 
+      showMsg("幸運卡 +1！"); 
+    }
+    
+    setTimeout(next, 1500);
+  } else {
+    streak = 0; 
+    score = Math.max(0, score - currentMul);
+    document.getElementById("msg").textContent = "答錯，正解：" + ans.replace(/√([^]*)/, "√($1)");
+    locked = true; 
+    document.getElementById("nextBtn").style.display = "block";
+  }
+  currentMul = 1; 
+  updateUI();
+}
+
+function showMsg(text) {
+  const dom = document.getElementById("msg");
+  dom.textContent = text;
+  if (text.startsWith("正確") || text.includes("幸運卡 +1")) {
+    setTimeout(() => { if(!locked) dom.textContent = ""; }, 1500);
+  }
+}
+
+function next() {
+  locked = false; 
+  currentInput = ""; 
+  currentMul = 1;
+  document.getElementById("nextBtn").style.display = "none";
+  document.getElementById("msg").textContent = "";
+  
+  let qText = (level===1?genType1():level===2?genType2():level===3?genType3():genType4());
+  try {
+    katex.render(toLatex(qText + " = ?"), document.getElementById("q"), { throwOnError: false });
+  } catch(e) {
+    document.getElementById("q").textContent = qText + " = ?";
+  }
+  
+  renderInput(); 
+  updateUI();
+}
+
+function updateUI() {
+  document.getElementById("score").textContent = score;
+  document.getElementById("luck").textContent = luck;
+  document.getElementById("correctCount").textContent = correctQ;
+  document.getElementById("rate").textContent = totalQ === 0 ? "0%" : Math.round(correctQ/totalQ*100) + "%";
+}
+
+function setLevel(n) { 
+  if (gameStarted) return;
+  level = n; 
+  document.querySelectorAll(".level button").forEach((b,i)=>b.classList.toggle("on", i===n-1)); 
+  updateStartBtn(); 
 }
 
 function updateStartBtn() {
   const c = document.getElementById("className").value.trim();
   const i = document.getElementById("studentId").value.trim();
   const n = document.getElementById("studentName").value.trim();
-  const btn = document.getElementById("startBtn");
-  btn.disabled = !(c && i && n && level !== null);
+  document.getElementById("startBtn").disabled = !(c && i && n && level !== null);
 }
 
 function updateStudentList() {
@@ -302,122 +392,32 @@ function autoFillName() {
   updateStartBtn();
 }
 
-function setLevel(n) {
-  if (gameStarted) return;
-  level = n;
-  document.getElementById("lv1").classList.toggle("on", level === 1);
-  document.getElementById("lv2").classList.toggle("on", level === 2);
-  document.getElementById("lv3").classList.toggle("on", level === 3);
-  document.getElementById("lv4").classList.toggle("on", level === 4);
-  updateStartBtn();
-}
-
-function startTimer() {
-  if (startTime) return;
-  startTime = Date.now();
-  timer = setInterval(updateTime, 1000);
-}
-
-function updateTime() {
-  if (!startTime) return;
-  const sec = Math.floor((Date.now() - startTime) / 1000);
-  const m = String(Math.floor(sec / 60)).padStart(2, '0');
-  const s = String(sec % 60).padStart(2, '0');
-  document.getElementById("time").textContent = `${m}:${s}`;
-}
-
-function getTotalSec() {
-  return startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
-}
-
-function startGame() {
-  gameStarted = true;
-  startTimer();
+function startGame() { 
+  gameStarted = true; 
   document.getElementById("className").disabled = true;
   document.getElementById("studentId").disabled = true;
   document.getElementById("studentName").disabled = true;
   document.getElementById("startBtn").disabled = true;
-  next();
+  
+  startTime = Date.now(); 
+  timer = setInterval(() => { 
+    let s = Math.floor((Date.now()-startTime)/1000); 
+    document.getElementById("time").textContent = Math.floor(s/60).toString().padStart(2,'0') + ":" + (s%60).toString().padStart(2,'0'); 
+  }, 1000); 
+  
+  next(); 
 }
 
-function useLuck() {
-  if (!gameStarted || luck < 1 || locked) return;
-  luck--;
-  currentMul = Math.random() < 0.5 ? 2 : 3;
-  showMsg("幸運卡生效！本題 ×" + currentMul);
-  next();
-  update();
+function useLuck() { 
+  if(!gameStarted || locked || luck < 1) return; 
+  luck--; 
+  currentMul = Math.random()>0.5 ? 2 : 3; 
+  document.getElementById("msg").textContent = "幸運卡生效！本題分數 ×" + currentMul; 
+  updateUI(); 
 }
 
-function insert(v){ if(locked||!gameStarted) return; document.getElementById("input").value += v; }
-function del(){ if(locked||!gameStarted) return; document.getElementById("input").value = ""; }
-
-function next() {
-  locked = false;
-  document.getElementById("nextBtn").style.display = "none";
-  const qText = genQ() + " = ?";
-  document.getElementById("q").innerHTML = "";
-  try {
-    katex.render(toLatex(qText), document.getElementById("q"), {throwOnError: false});
-  } catch(e) {
-    document.getElementById("q").textContent = qText;
-  }
-  del();
-  update();
-}
-
-function showMsg(text) {
-  const dom = document.getElementById("msg");
-  dom.textContent = text;
-  if (text.startsWith("正確")) {
-    setTimeout(() => { dom.textContent = ""; }, 1500);
-  }
-}
-
-function update() {
-  document.getElementById("score").textContent = score;
-  document.getElementById("luck").textContent = luck;
-  document.getElementById("correctCount").textContent = correctQ;
-  const rate = totalQ === 0 ? 0 : Math.round(correctQ / totalQ * 100);
-  document.getElementById("rate").textContent = rate + "%";
-}
-
-function addLuck() {
-  if (luck < 2) {
-    luck++;
-    showMsg("幸運卡 +1！");
-  }
-}
-
-function check() {
-  if(locked||!gameStarted) return;
-  const val = document.getElementById("input").value.trim();
-  const mul = currentMul;
-
-  totalQ++;
-
-  if (val === ans) {
-    correctQ++;
-    streak++;
-    score = Math.max(0, score + 1 * mul);
-    showMsg("正確！ +" + mul);
-
-    if (streak >= 3) addLuck();
-    if (correctQ % 15 === 0) addLuck();
-
-    setTimeout(() => { next(); }, 1500);
-  } else {
-    streak = 0;
-    score = Math.max(0, score - 1 * mul);
-    showMsg("答錯：" + ans);
-    if (Math.random() < 0.1) addLuck();
-
-    locked = true;
-    document.getElementById("nextBtn").style.display = "block";
-  }
-
-  currentMul = 1;
-  update();
+function getTotalSec() {
+  return startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
 }
 
 function uploadScore() {
@@ -433,11 +433,8 @@ function uploadScore() {
   const className = document.getElementById("className").value.trim();
   const studentId = document.getElementById("studentId").value.trim();
   const studentName = document.getElementById("studentName").value.trim();
-  const scoreValue = score;
-  const correctValue = correctQ;
   const rateValue = totalQ === 0 ? "0" : (correctQ / totalQ * 100).toFixed(1);
-  const levelValue = level === 1 ? "程度一" : level === 2 ? "程度二" : level === 3 ? "程度三" : "程度四";
-  const timeSecValue = getTotalSec();
+  const levelValue = level === 1 ? "題型一" : level === 2 ? "題型二" : level === 3 ? "題型三" : "題型四";
 
   const GAS_URL = "https://script.google.com/macros/s/AKfycbyHFGxezML6QQsxvYDIR7t9nx28549ZcxukGITGCpSTH0dmJAYnOIcypGZrJKWELSUl/exec";
 
@@ -446,11 +443,11 @@ function uploadScore() {
     className: className,
     studentId: studentId,
     studentName: studentName,
-    score: scoreValue,
-    correct: correctValue,
+    score: score,
+    correct: correctQ,
     rate: rateValue,
     level: levelValue,
-    timeSec: timeSecValue
+    timeSec: getTotalSec()
   };
 
   fetch(GAS_URL, {
@@ -460,12 +457,7 @@ function uploadScore() {
     body: JSON.stringify(data)
   })
   .then(() => {
-    alert("上傳成功！\n\n班級：" + className +
-          "\n學號：" + studentId +
-          "\n姓名：" + studentName +
-          "\n分數：" + scoreValue +
-          "\n答對題數：" + correctValue +
-          "\n答對率：" + rateValue + "%");
+    alert("上傳成功！\n\n班級：" + className + "\n學號：" + studentId + "\n姓名：" + studentName + "\n分數：" + score + "\n答對題數：" + correctQ + "\n答對率：" + rateValue + "%");
     lastUpload = Date.now();
   })
   .catch(() => {
