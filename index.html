@@ -33,7 +33,6 @@
   .next{background:#33bb55}
   .upload{background:#378cf9}
 </style>
-<!-- KaTeX 讓根號真正把數字包在裡面（81 會在根號內） -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 </head>
@@ -61,8 +60,9 @@
 
   <div class="level">
     <button id="lv1" onclick="setLevel(1)">程度一<br>(直接開平方)</button>
-    <button id="lv2" onclick="setLevel(2)">程度二<br>(根式化簡)</button>
+    <button id="lv2" onclick="setLevel(2)">程度二<br>(平方計算)</button>
     <button id="lv3" onclick="setLevel(3)">程度三<br>(根式乘法)</button>
+    <button id="lv4" onclick="setLevel(4)">程度四<br>(根式化簡)</button>
   </div>
 
   <button class="start-btn" id="startBtn" onclick="startGame()" disabled>開始答題</button>
@@ -163,19 +163,51 @@ function hasOnlySmallPrimes(n) {
   return n === 1;
 }
 
-function getRadicand(str) {
-  if (!str.includes("√")) return 1;
-  return parseInt(str.split("√")[1]) || 1;
-}
-
 function genType1() {
   const k = Math.floor(Math.random() * 20) + 1;
   const n = k * k;
   ans = k.toString();
-  return `√(${n})`;                     // 81 明確在根號內
+  return `√(${n})`;
 }
 
-function genType2() {   // 程度二：根式化簡
+function genType2() {   // 程度二：(k√m)^2
+  const k = Math.floor(Math.random() * 5) + 1;
+  let m;
+  do { m = Math.floor(Math.random() * 36) + 2; } while (!hasOnlySmallPrimes(m));
+  ans = (k * k * m).toString();
+  return `(${k}√(${m}))²`;
+}
+
+function genType3() {   // 程度三：根式乘法
+  let attempts = 0;
+  while (attempts < 100) {
+    attempts++;
+    const r = Math.random();
+    let qText, simplified;
+    if (r < 0.5) {
+      let a, b;
+      do { a = Math.floor(Math.random() * 36) + 2; } while (!hasOnlySmallPrimes(a));
+      do { b = Math.floor(Math.random() * 36) + 2; } while (!hasOnlySmallPrimes(b));
+      qText = `√(${a}) × √(${b})`;
+      simplified = simplifyNumber(a * b);
+    } else {
+      const k = Math.floor(Math.random() * 5) + 2;
+      let p, q;
+      do { p = Math.floor(Math.random() * 36) + 2; } while (!hasOnlySmallPrimes(p));
+      do { q = Math.floor(Math.random() * 36) + 2; } while (!hasOnlySmallPrimes(q));
+      qText = `${k}√(${p}) × √(${q})`;
+      simplified = simplifyNumber(k * k * p * q);
+    }
+    if (getRadicand(simplified) <= 100) {
+      ans = simplified;
+      return qText;
+    }
+  }
+  ans = "6";
+  return "√(36)";
+}
+
+function genType4() {   // 程度四：根式化簡
   const r = Math.random();
   if (r < 0.4) {
     const sq = squares[Math.floor(Math.random() * squares.length)];
@@ -186,7 +218,7 @@ function genType2() {   // 程度二：根式化簡
     }
     const n = sq * extra;
     ans = simplifyNumber(n);
-    return `√(${n})`;                   // 數字明確在根號內
+    return `√(${n})`;
   } else if (r < 0.7) {
     const mSq = squares[Math.floor(Math.random() * squares.length)];
     const nSq = squares[Math.floor(Math.random() * squares.length)];
@@ -208,47 +240,24 @@ function genType2() {   // 程度二：根式化簡
   }
 }
 
-function genType3() {   // 程度三：根式乘法
-  let attempts = 0;
-  while (attempts < 100) {
-    attempts++;
-    const r = Math.random();
-    let qText, simplified;
-    if (r < 0.5) {
-      let a, b;
-      do { a = Math.floor(Math.random() * 36) + 2; } while (!hasOnlySmallPrimes(a));
-      do { b = Math.floor(Math.random() * 36) + 2; } while (!hasOnlySmallPrimes(b));
-      qText = `√${a} × √${b}`;
-      simplified = simplifyNumber(a * b);
-    } else {
-      const k = Math.floor(Math.random() * 5) + 2;
-      let p, q;
-      do { p = Math.floor(Math.random() * 36) + 2; } while (!hasOnlySmallPrimes(p));
-      do { q = Math.floor(Math.random() * 36) + 2; } while (!hasOnlySmallPrimes(q));
-      qText = `${k}√${p} × √${q}`;
-      simplified = simplifyNumber(k * k * p * q);
-    }
-    if (getRadicand(simplified) <= 100) {
-      ans = simplified;
-      return qText;
-    }
-  }
-  ans = "6";
-  return "√36";
+function getRadicand(str) {
+  if (!str.includes("√")) return 1;
+  return parseInt(str.split("√")[1]) || 1;
 }
 
 function genQ() {
   if (level === 1) return genType1();
   if (level === 2) return genType2();
-  return genType3();
+  if (level === 3) return genType3();
+  return genType4();
 }
 
 function toLatex(text) {
   return text
-    .replace(/√/g, '\\sqrt{')
-    .replace(/×/g, '\\times ')
-    .replace(/\(/g, '{')
-    .replace(/\)/g, '}');
+    .replace(/\)²/g, '}^{2}')      // 先處理平方符號
+    .replace(/√\(/g, '\\sqrt{')    // 再處理根號
+    .replace(/\)/g, '}')           // 最後處理其餘的 )
+    .replace(/×/g, '\\times ');
 }
 
 function updateStartBtn() {
@@ -299,6 +308,7 @@ function setLevel(n) {
   document.getElementById("lv1").classList.toggle("on", level === 1);
   document.getElementById("lv2").classList.toggle("on", level === 2);
   document.getElementById("lv3").classList.toggle("on", level === 3);
+  document.getElementById("lv4").classList.toggle("on", level === 4);
   updateStartBtn();
 }
 
@@ -426,7 +436,7 @@ function uploadScore() {
   const scoreValue = score;
   const correctValue = correctQ;
   const rateValue = totalQ === 0 ? "0" : (correctQ / totalQ * 100).toFixed(1);
-  const levelValue = level === 1 ? "程度一" : level === 2 ? "程度二" : "程度三";
+  const levelValue = level === 1 ? "程度一" : level === 2 ? "程度二" : level === 3 ? "程度三" : "程度四";
   const timeSecValue = getTotalSec();
 
   const GAS_URL = "https://script.google.com/macros/s/AKfycbyHFGxezML6QQsxvYDIR7t9nx28549ZcxukGITGCpSTH0dmJAYnOIcypGZrJKWELSUl/exec";
