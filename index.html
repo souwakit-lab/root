@@ -46,7 +46,7 @@
   .btn-bar{display:flex;gap:8px;margin-top:12px;}
   .btn-bar button{flex:1;padding:14px 4px;border:none;border-radius:12px;color:white;font-size:15px;font-weight:bold;}
   
-  /* 按鈕冷卻時的禁用樣式 */
+  /* 按鈕冷卻時的禁用樣式 (變灰色) */
   .btn-bar button:disabled { background: #ccc !important; cursor: not-allowed; opacity: 0.8; }
   
   .reset{background:#ff6666}
@@ -127,7 +127,7 @@
   </div>
 
   <div class="btn-bar">
-    <button class="upload" onclick="uploadScore()">上傳</button>
+    <button id="uploadBtn" class="upload" onclick="uploadScore()">上傳</button>
     <button class="luck" onclick="useLuck()">幸運卡</button>
     <button class="reset" onclick="clearAll()">清空</button>
     <button id="checkBtn" class="ok" onclick="check()">確認</button>
@@ -137,7 +137,7 @@
 
 <script>
 let score = 0, luck = 0, level = null, ans = "", currentMul = 1, locked = false, gameStarted = false;
-let totalQ = 0, correctQ = 0, streak = 0, startTime = null, timer = null, lastUpload = 0, currentInput = "";
+let totalQ = 0, correctQ = 0, streak = 0, startTime = null, timer = null, currentInput = "";
 
 const studentData = {
   "S2D": [{"id":"1","name":"何俊文"},{"id":"2","name":"何曉琳"},{"id":"3","name":"何鴻澎"},{"id":"4","name":"余敬燊"},{"id":"5","name":"呂家浩"},{"id":"6","name":"李佳玥"},{"id":"7","name":"李卓軒"},{"id":"8","name":"林永鴻"},{"id":"9","name":"林芯瑩"},{"id":"10","name":"林鈴惠"},{"id":"11","name":"林嘉怡"},{"id":"12","name":"林駿業"},{"id":"13","name":"施俊升"},{"id":"14","name":"高詠晴"},{"id":"15","name":"郭子熙"},{"id":"16","name":"陳曉瑩"},{"id":"17","name":"琪旂"},{"id":"18","name":"馮蕙妍"},{"id":"19","name":"黃辰鉉"},{"id":"20","name":"黃宗澤"},{"id":"21","name":"黃婉瑤"},{"id":"22","name":"黃竣顥"},{"id":"23","name":"黃紫翹"},{"id":"24","name":"黃麗蕓"},{"id":"25","name":"葉曉臻"},{"id":"26","name":"劉益菲"},{"id":"27","name":"劉駿龍"},{"id":"28","name":"歐子曦"},{"id":"29","name":"鄧梓俊"},{"id":"30","name":"鄧梓軒"},{"id":"31","name":"鄭宇軒"},{"id":"32","name":"鄭裕馨"},{"id":"33","name":"謝志強"},{"id":"34","name":"蘇鑫陽"}],
@@ -293,10 +293,8 @@ function clearAll() {
 function check() {
   if (locked || !gameStarted) return;
   
-  // 【防刷分解法】一按就立刻鎖定，杜絕連按重複加分
+  // 啟動確認鍵防刷冷卻
   locked = true; 
-  
-  // 啟動確認鍵 5 秒視覺冷卻
   const checkBtn = document.getElementById("checkBtn");
   if (checkBtn) {
     checkBtn.disabled = true;
@@ -326,14 +324,12 @@ function check() {
       showMsg("幸運卡 +1！"); 
     }
     
-    // 答對後自動進入下一題，並會在 next() 裡面解除冷卻
     setTimeout(next, 1500);
   } else {
     streak = 0; 
     score = Math.max(0, score - currentMul);
     document.getElementById("msg").textContent = "答錯，正解：" + ans.replace(/√([^]*)/, "√($1)");
     document.getElementById("nextBtn").style.display = "block";
-    // 答錯時保持鎖定，直到學生按「下一題」
   }
   currentMul = 1; 
   updateUI();
@@ -343,7 +339,6 @@ function showMsg(text) {
   const dom = document.getElementById("msg");
   dom.textContent = text;
   if (text.startsWith("正確") || text.includes("幸運卡 +1")) {
-    // 只有在非鎖定狀態下才清空訊息，避免覆蓋「答錯」提示
     setTimeout(() => { if(!locked || document.getElementById("nextBtn").style.display === "none") dom.textContent = ""; }, 1500);
   }
 }
@@ -355,7 +350,6 @@ function next() {
   document.getElementById("nextBtn").style.display = "none";
   document.getElementById("msg").textContent = "";
   
-  // 解除確認鍵冷卻 (為了確保答題流暢，新題目出來就能直接作答)
   const checkBtn = document.getElementById("checkBtn");
   if (checkBtn) checkBtn.disabled = false;
   
@@ -458,13 +452,24 @@ function uploadScore() {
     alert("請先開始答題");
     return;
   }
+
+  const uploadBtn = document.getElementById("uploadBtn");
   
-  // 上傳鍵 1 分鐘 (60000 毫秒) 冷卻防護
-  if (Date.now() - lastUpload < 60000) {
-    let waitSec = Math.ceil((60000 - (Date.now() - lastUpload)) / 1000);
-    alert("上傳過於頻繁，請等待 " + waitSec + " 秒後再試");
-    return;
-  }
+  // 將按鈕鎖定並開始 60 秒倒數
+  uploadBtn.disabled = true;
+  let cooldown = 60;
+  uploadBtn.textContent = `冷卻 ${cooldown}s`;
+
+  let cdTimer = setInterval(() => {
+    cooldown--;
+    if (cooldown <= 0) {
+      clearInterval(cdTimer);
+      uploadBtn.disabled = false;
+      uploadBtn.textContent = "上傳";
+    } else {
+      uploadBtn.textContent = `冷卻 ${cooldown}s`;
+    }
+  }, 1000);
 
   const className = document.getElementById("className").value.trim();
   const studentId = document.getElementById("studentId").value.trim();
@@ -494,10 +499,13 @@ function uploadScore() {
   })
   .then(() => {
     alert("上傳成功！\n\n班級：" + className + "\n學號：" + studentId + "\n姓名：" + studentName + "\n分數：" + score + "\n答對題數：" + correctQ + "\n答對率：" + rateValue + "%");
-    lastUpload = Date.now();
   })
   .catch(() => {
     alert("上傳失敗，請檢查網路");
+    // 若上傳失敗，立刻解除冷卻，讓學生能重試
+    clearInterval(cdTimer);
+    uploadBtn.disabled = false;
+    uploadBtn.textContent = "上傳";
   });
 }
 </script>
