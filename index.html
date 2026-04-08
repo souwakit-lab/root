@@ -45,6 +45,10 @@
   .func{background:#d1f7e5;font-weight:bold;}
   .btn-bar{display:flex;gap:8px;margin-top:12px;}
   .btn-bar button{flex:1;padding:14px 4px;border:none;border-radius:12px;color:white;font-size:15px;font-weight:bold;}
+  
+  /* 按鈕冷卻時的禁用樣式 */
+  .btn-bar button:disabled { background: #ccc !important; cursor: not-allowed; opacity: 0.8; }
+  
   .reset{background:#ff6666}
   .ok{background:#378cf9}
   .luck{background:#ffaa33}
@@ -126,7 +130,7 @@
     <button class="upload" onclick="uploadScore()">上傳</button>
     <button class="luck" onclick="useLuck()">幸運卡</button>
     <button class="reset" onclick="clearAll()">清空</button>
-    <button class="ok" onclick="check()">確認</button>
+    <button id="checkBtn" class="ok" onclick="check()">確認</button>
     <button class="nextBtn" id="nextBtn" onclick="next()" style="display:none">下一題</button>
   </div>
 </div>
@@ -201,13 +205,11 @@ function genType3() {
   }
 }
 
-// 題型四全面升級：支援數字化簡後殘留於根號內
 function genType4() {
   const vars = ["a", "b", "c", "y"].sort(() => Math.random() - 0.5).slice(0, Math.floor(Math.random()*3)+1).sort();
   
-  // 決定係數(開出來的數字)與殘留數(留在根號內的數字)
-  const coeff = Math.floor(Math.random() * 5) + 1; // 1~5
-  const leftovers = [1, 2, 3, 5, 6, 7, 10]; // 1代表根號內沒有額外的數字
+  const coeff = Math.floor(Math.random() * 5) + 1;
+  const leftovers = [1, 2, 3, 5, 6, 7, 10]; 
   const m = leftovers[Math.floor(Math.random() * leftovers.length)];
   
   const originalNum = (coeff * coeff) * m;
@@ -224,7 +226,6 @@ function genType4() {
     if(iP>0) inP += v;
   });
   
-  // 若完全沒有係數跟變數 (防呆機制)
   if (out === "" && inP === "") {
     ans = "1";
     qIn = "1";
@@ -291,6 +292,19 @@ function clearAll() {
 
 function check() {
   if (locked || !gameStarted) return;
+  
+  // 【防刷分解法】一按就立刻鎖定，杜絕連按重複加分
+  locked = true; 
+  
+  // 啟動確認鍵 5 秒視覺冷卻
+  const checkBtn = document.getElementById("checkBtn");
+  if (checkBtn) {
+    checkBtn.disabled = true;
+    setTimeout(() => {
+      if (checkBtn) checkBtn.disabled = false;
+    }, 5000);
+  }
+
   totalQ++;
   let userNorm = normalizeStr(currentInput), ansNorm = normalizeStr(ans);
   
@@ -312,13 +326,14 @@ function check() {
       showMsg("幸運卡 +1！"); 
     }
     
+    // 答對後自動進入下一題，並會在 next() 裡面解除冷卻
     setTimeout(next, 1500);
   } else {
     streak = 0; 
     score = Math.max(0, score - currentMul);
     document.getElementById("msg").textContent = "答錯，正解：" + ans.replace(/√([^]*)/, "√($1)");
-    locked = true; 
     document.getElementById("nextBtn").style.display = "block";
+    // 答錯時保持鎖定，直到學生按「下一題」
   }
   currentMul = 1; 
   updateUI();
@@ -328,7 +343,8 @@ function showMsg(text) {
   const dom = document.getElementById("msg");
   dom.textContent = text;
   if (text.startsWith("正確") || text.includes("幸運卡 +1")) {
-    setTimeout(() => { if(!locked) dom.textContent = ""; }, 1500);
+    // 只有在非鎖定狀態下才清空訊息，避免覆蓋「答錯」提示
+    setTimeout(() => { if(!locked || document.getElementById("nextBtn").style.display === "none") dom.textContent = ""; }, 1500);
   }
 }
 
@@ -338,6 +354,10 @@ function next() {
   currentMul = 1;
   document.getElementById("nextBtn").style.display = "none";
   document.getElementById("msg").textContent = "";
+  
+  // 解除確認鍵冷卻 (為了確保答題流暢，新題目出來就能直接作答)
+  const checkBtn = document.getElementById("checkBtn");
+  if (checkBtn) checkBtn.disabled = false;
   
   let qText = (level===1?genType1():level===2?genType2():level===3?genType3():genType4());
   try {
@@ -438,8 +458,11 @@ function uploadScore() {
     alert("請先開始答題");
     return;
   }
-  if (Date.now() - lastUpload < 5000) {
-    alert("上傳過於頻繁，請稍後再試");
+  
+  // 上傳鍵 1 分鐘 (60000 毫秒) 冷卻防護
+  if (Date.now() - lastUpload < 60000) {
+    let waitSec = Math.ceil((60000 - (Date.now() - lastUpload)) / 1000);
+    alert("上傳過於頻繁，請等待 " + waitSec + " 秒後再試");
     return;
   }
 
