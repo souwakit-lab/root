@@ -22,7 +22,6 @@
   
   .info{display:flex;justify-content:space-between;margin:8px 0;font-size:15px;}
   
-  /* 確保 LaTeX 數學式有足夠的顯示空間並居中對齊 */
   .msg{text-align:center;color:red;font-size:18px;min-height:34px;font-weight:bold;display:flex;align-items:center;justify-content:center;gap:6px;}
   
   .q{text-align:center;font-size:32px;margin:20px 0;font-weight:bold;min-height:80px; display:flex; align-items:center; justify-content:center;}
@@ -186,7 +185,6 @@ function genType2() {
   return (k===1) ? `(\\sqrt{${m}})^2` : `(${k}\\sqrt{${m}})^2`; 
 }
 
-// 題型三：完全還原原始代碼邏輯
 function genType3() {
   const type = Math.floor(Math.random()*3);
   if (type === 0) {
@@ -241,7 +239,7 @@ function genType4() {
   return `√(${qIn})`;
 }
 
-// 題型五：產出字串與原來題型保持 √() 的結構一致
+// 題型五：新增分母有理化邏輯，並且控制在 90 以內
 function genType5() {
   const vars = ["a", "b", "c", "y"];
   const hasVar = Math.random() < 0.5;
@@ -254,8 +252,9 @@ function genType5() {
 
   let terms = [];
 
+  // 控制內部數字不得超過 90
   function getK(r) {
-    let maxK = Math.floor(Math.sqrt(120 / r));
+    let maxK = Math.floor(Math.sqrt(90 / r));
     if (maxK < 1) maxK = 1;
     return Math.floor(Math.random() * maxK) + 1;
   }
@@ -317,14 +316,34 @@ function genType5() {
 
     let sign = t.c > 0 ? "+" : "-";
     let absC = Math.abs(t.c);
-    let cStr = absC === 1 ? "" : absC.toString();
+    let C = absC * t.k; 
     let R = t.k * t.k * t.r;
 
-    if (i === 0) {
-      if (t.c < 0) qStr += "-";
-      qStr += cStr + "√(" + R + v + ")";
+    // 加入 50% 機率將題目轉化為需「分母有理化」的格式
+    let formatProb = Math.random();
+    let termBody = "";
+
+    if (formatProb < 0.25) {
+      // 分母有理化格式 A: \frac{C * r * v}{\sqrt{r * v}} 
+      let numStr = (C * t.r).toString() + v;
+      let denStr = "\\sqrt{" + t.r + v + "}";
+      termBody = `\\frac{${numStr}}{${denStr}}`;
+    } else if (formatProb < 0.5) {
+      // 分母有理化格式 B: \frac{C * m * r * v}{m \sqrt{r * v}} (增加約分難度)
+      let m = Math.floor(Math.random() * 2) + 2; // m 為 2 或 3
+      let numStr = (C * m * t.r).toString() + v;
+      let denStr = m.toString() + "\\sqrt{" + t.r + v + "}";
+      termBody = `\\frac{${numStr}}{${denStr}}`;
     } else {
-      qStr += sign + cStr + "√(" + R + v + ")";
+      // 一般化簡格式: C \sqrt{k^2 * r * v}
+      let cStr = absC === 1 ? "" : absC.toString();
+      termBody = cStr + "\\sqrt{" + R + v + "}";
+    }
+
+    if (i === 0) {
+      qStr += (t.c < 0 ? "-" : "") + termBody;
+    } else {
+      qStr += sign + termBody;
     }
   });
 
@@ -333,8 +352,8 @@ function genType5() {
     let coeff = ansMap[r];
     if (coeff !== 0) {
       let cStr = Math.abs(coeff) === 1 ? "" : Math.abs(coeff).toString();
-      let sign = coeff > 0 ? "+" : "-";
-      ans += sign + cStr + "√" + r + v;
+      let signStr = coeff > 0 ? "+" : "-";
+      ans += signStr + cStr + "√" + r + v;
     }
   });
 
@@ -343,7 +362,6 @@ function genType5() {
   return qStr;
 }
 
-// 【最核心的修復】：加入雙層括號 {{$1}} 保證 \frac 等較長字元在 KaTeX 中不會發生 ParseError
 function toLatex(raw) {
   if (!raw) return "";
   let s = raw.replace(/√\(([^)]+)\)/g, "\\sqrt{{$1}}")
