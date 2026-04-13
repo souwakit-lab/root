@@ -17,14 +17,12 @@
   .start-btn:disabled{background:#ccc;}
   
   .level{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0;}
-  .level button{flex:1 1 18%;padding:8px 0;margin:0;border-radius:10px;border:none;background:#ddd;font-size:14px;line-height:1.3;}
+  .level button{flex:1 1 30%;padding:8px 0;margin:0;border-radius:10px;border:none;background:#ddd;font-size:13px;line-height:1.3;}
   .level .on{background:#378cf9;color:white;}
   
   .info{display:flex;justify-content:space-between;margin:8px 0;font-size:15px;}
-  
   .msg{text-align:center;color:red;font-size:18px;min-height:34px;font-weight:bold;display:flex;align-items:center;justify-content:center;gap:6px;}
-  
-  .q{text-align:center;font-size:32px;margin:20px 0;font-weight:bold;min-height:80px; display:flex; align-items:center; justify-content:center;}
+  .q{text-align:center;font-size:32px;margin:20px 0;font-weight:bold;min-height:100px; display:flex; align-items:center; justify-content:center;}
   
   .math-input {
     width: 100%;
@@ -47,7 +45,6 @@
   .func{background:#d1f7e5;font-weight:bold;}
   .btn-bar{display:flex;gap:8px;margin-top:12px;}
   .btn-bar button{flex:1;padding:14px 4px;border:none;border-radius:12px;color:white;font-size:15px;font-weight:bold;}
-  
   .btn-bar button:disabled { background: #ccc !important; cursor: not-allowed; opacity: 0.8; }
   
   .reset{background:#ff6666}
@@ -73,11 +70,9 @@
       <option value="S2D">S2D</option>
       <option value="S2E">S2E</option>
     </select>
-
     <select id="studentId" onchange="autoFillName()" disabled>
       <option value="">請選學號</option>
     </select>
-
     <input id="studentName" placeholder="姓名" disabled readonly>
   </div>
 
@@ -87,6 +82,7 @@
     <button id="lv3" onclick="setLevel(3)">題型三<br>根式乘法</button>
     <button id="lv4" onclick="setLevel(4)">題型四<br>根式化簡</button>
     <button id="lv5" onclick="setLevel(5)">題型五<br>根式加減</button>
+    <button id="lv6" onclick="setLevel(6)">題型六<br>分母有理化</button>
   </div>
 
   <button class="start-btn" id="startBtn" onclick="startGame()" disabled>開始答題</button>
@@ -111,22 +107,18 @@
     <button class="key func" onclick="insert('+')">+</button>
     <button class="key func" onclick="insert('-')">-</button>
     <button class="key" onclick="insert('a')">a</button>
-    
     <button class="key" onclick="insert('7')">7</button>
     <button class="key" onclick="insert('8')">8</button>
     <button class="key" onclick="insert('9')">9</button>
     <button class="key" onclick="insert('b')">b</button>
-    
     <button class="key" onclick="insert('4')">4</button>
     <button class="key" onclick="insert('5')">5</button>
     <button class="key" onclick="insert('6')">6</button>
     <button class="key" onclick="insert('c')">c</button>
-    
     <button class="key" onclick="insert('1')">1</button>
     <button class="key" onclick="insert('2')">2</button>
     <button class="key" onclick="insert('3')">3</button>
     <button class="key" onclick="insert('y')">y</button>
-    
     <button class="key" style="grid-column: span 2;" onclick="insert('0')">0</button>
     <button class="key func" onclick="insert('^')">xⁿ</button>
     <button class="key" style="background:#ff9999" onclick="backspace()">⌫</button>
@@ -217,11 +209,9 @@ function genType4() {
   const leftovers = [1, 2, 3, 5, 6, 7, 10]; 
   const m = leftovers[Math.floor(Math.random() * leftovers.length)];
   const originalNum = (coeff * coeff) * m;
-  
   let qIn = (originalNum === 1 ? "" : originalNum.toString());
   let out = (coeff === 1 ? "" : coeff.toString());
   let inP = (m === 1 ? "" : m.toString());
-  
   vars.forEach(v => {
     let p = Math.floor(Math.random()*6)+2; 
     qIn += v + "^" + p;
@@ -229,143 +219,99 @@ function genType4() {
     if(oP>0) out += (oP===1?v:v+"^"+oP);
     if(iP>0) inP += v;
   });
-  
-  if (out === "" && inP === "") {
-    ans = "1";
-    qIn = "1";
-  } else {
-    ans = out + (inP ? "√"+inP : "");
-  }
+  if (out === "" && inP === "") { ans = "1"; qIn = "1"; }
+  else { ans = out + (inP ? "√"+inP : ""); }
   return `√(${qIn})`;
 }
 
-// 題型五：新增分母有理化邏輯，並且控制在 90 以內
+// 題型五：根式加減 (純加減，數字限制在 90 內)
 function genType5() {
   const vars = ["a", "b", "c", "y"];
   const hasVar = Math.random() < 0.5;
   const v = hasVar ? vars[Math.floor(Math.random() * vars.length)] : "";
-
-  const sqFrees = [2, 3, 5, 6, 7, 10, 11, 14, 15, 21, 22].sort(() => Math.random() - 0.5);
-  
+  const sqFrees = [2, 3, 5, 6, 7, 10, 11, 14, 15, 21].sort(() => Math.random() - 0.5);
   const numTerms = Math.random() < 0.5 ? 3 : 4; 
   const isSingleTerm = Math.random() < 0.5; 
-
   let terms = [];
-
-  // 控制內部數字不得超過 90
   function getK(r) {
     let maxK = Math.floor(Math.sqrt(90 / r));
-    if (maxK < 1) maxK = 1;
     return Math.floor(Math.random() * maxK) + 1;
   }
-
   if (isSingleTerm) {
     const r1 = sqFrees[0];
     let sum = 0;
     do {
-      terms = [];
-      sum = 0;
+      terms = []; sum = 0;
       for(let i=0; i<numTerms; i++) {
-        let k = getK(r1);
-        let c = (Math.random() < 0.5 ? 1 : -1) * (Math.floor(Math.random() * 3) + 1);
-        terms.push({c: c, k: k, r: r1});
-        sum += c * k;
+        let k = getK(r1), c = (Math.random() < 0.5 ? 1 : -1) * (Math.floor(Math.random() * 3) + 1);
+        terms.push({c, k, r: r1}); sum += c * k;
       }
     } while (sum === 0);
-
   } else {
-    const r1 = sqFrees[0];
-    const r2 = sqFrees[1];
+    const r1 = sqFrees[0], r2 = sqFrees[1];
     let sum1 = 0, sum2 = 0;
-
     do {
-      terms = [];
-      sum1 = 0;
+      terms = []; sum1 = 0;
       for(let i=0; i<2; i++) {
-        let k = getK(r1);
-        let c = (Math.random() < 0.5 ? 1 : -1) * (Math.floor(Math.random() * 3) + 1);
-        terms.push({c: c, k: k, r: r1});
-        sum1 += c * k;
+        let k = getK(r1), c = (Math.random() < 0.5 ? 1 : -1) * (Math.floor(Math.random() * 3) + 1);
+        terms.push({c, k, r: r1}); sum1 += c * k;
       }
     } while (sum1 === 0);
-
     do {
-      let termsR2 = [];
-      sum2 = 0;
+      let termsR2 = []; sum2 = 0;
       let numR2 = (numTerms === 4) ? 2 : 1;
       for(let i=0; i<numR2; i++) {
-        let k = getK(r2);
-        let c = (Math.random() < 0.5 ? 1 : -1) * (Math.floor(Math.random() * 3) + 1);
-        termsR2.push({c: c, k: k, r: r2});
-        sum2 += c * k;
+        let k = getK(r2), c = (Math.random() < 0.5 ? 1 : -1) * (Math.floor(Math.random() * 3) + 1);
+        termsR2.push({c, k, r: r2}); sum2 += c * k;
       }
-      if (sum2 !== 0) {
-        terms = terms.concat(termsR2); 
-      }
+      if (sum2 !== 0) terms = terms.concat(termsR2);
     } while (sum2 === 0);
   }
-
   terms.sort(() => Math.random() - 0.5);
-
-  let qStr = "";
-  let ansMap = {};
-
+  let qStr = "", ansMap = {};
   terms.forEach((t, i) => {
-    if (!ansMap[t.r]) ansMap[t.r] = 0;
-    ansMap[t.r] += t.c * t.k;
-
-    let sign = t.c > 0 ? "+" : "-";
-    let absC = Math.abs(t.c);
-    let C = absC * t.k; 
-    let R = t.k * t.k * t.r;
-
-    // 加入 50% 機率將題目轉化為需「分母有理化」的格式
-    let formatProb = Math.random();
-    let termBody = "";
-
-    if (formatProb < 0.25) {
-      // 分母有理化格式 A: \frac{C * r * v}{\sqrt{r * v}} 
-      let numStr = (C * t.r).toString() + v;
-      let denStr = "\\sqrt{" + t.r + v + "}";
-      termBody = `\\frac{${numStr}}{${denStr}}`;
-    } else if (formatProb < 0.5) {
-      // 分母有理化格式 B: \frac{C * m * r * v}{m \sqrt{r * v}} (增加約分難度)
-      let m = Math.floor(Math.random() * 2) + 2; // m 為 2 或 3
-      let numStr = (C * m * t.r).toString() + v;
-      let denStr = m.toString() + "\\sqrt{" + t.r + v + "}";
-      termBody = `\\frac{${numStr}}{${denStr}}`;
-    } else {
-      // 一般化簡格式: C \sqrt{k^2 * r * v}
-      let cStr = absC === 1 ? "" : absC.toString();
-      termBody = cStr + "\\sqrt{" + R + v + "}";
-    }
-
-    if (i === 0) {
-      qStr += (t.c < 0 ? "-" : "") + termBody;
-    } else {
-      qStr += sign + termBody;
-    }
+    if (!ansMap[t.r]) ansMap[t.r] = 0; ansMap[t.r] += t.c * t.k;
+    let sign = t.c > 0 ? "+" : "-", absC = Math.abs(t.c), cStr = absC === 1 ? "" : absC.toString(), R = t.k * t.k * t.r;
+    if (i === 0) { if (t.c < 0) qStr += "-"; qStr += cStr + "√(" + R + v + ")"; }
+    else { qStr += sign + cStr + "√(" + R + v + ")"; }
   });
-
   ans = "";
   Object.keys(ansMap).sort().forEach(r => {
     let coeff = ansMap[r];
     if (coeff !== 0) {
       let cStr = Math.abs(coeff) === 1 ? "" : Math.abs(coeff).toString();
-      let signStr = coeff > 0 ? "+" : "-";
-      ans += signStr + cStr + "√" + r + v;
+      ans += (coeff > 0 ? "+" : "-") + cStr + "√" + r + v;
     }
   });
-
   if (ans.startsWith("+")) ans = ans.substring(1);
-
   return qStr;
+}
+
+// 題型六：分母有理化 (單個)
+function genType6() {
+  const vars = ["a", "b", "c", "y"];
+  const hasVar = Math.random() < 0.3;
+  const v = hasVar ? vars[Math.floor(Math.random() * vars.length)] : "";
+  const r = [2, 3, 5, 6, 7, 10].sort(() => Math.random() - 0.5)[0];
+  const k = Math.floor(Math.random() * 4) + 1; // 最終答案的係數
+  const num = k * r; // 分子
+  
+  // 隨機決定是否在分母帶一個係數 m
+  if (Math.random() < 0.4) {
+    const m = Math.floor(Math.random() * 2) + 2;
+    ans = simplifyNumber(k * k * r) + (v ? "√" + v : "");
+    return `\\frac{${num * m}${v}}{${m}\\sqrt{${r}${v}}}`;
+  } else {
+    ans = simplifyNumber(k * k * r) + (v ? "√" + v : "");
+    return `\\frac{${num}${v}}{\\sqrt{${r}${v}}}`;
+  }
 }
 
 function toLatex(raw) {
   if (!raw) return "";
-  let s = raw.replace(/√\(([^)]+)\)/g, "\\sqrt{{$1}}")
-             .replace(/√([a-z0-9^]+)/g, "\\sqrt{{$1}}")
+  // 修正：增加對 \frac 的保護，並確保 \sqrt 格式統一
+  let s = raw.replace(/√\(([^)]+)\)/g, "\\sqrt{$1}")
+             .replace(/√([a-z0-9^]+)/g, "\\sqrt{$1}")
              .replace(/\^([0-9]+)/g, "^{$1}")
              .replace(/×/g, "\\times ");
   return s;
@@ -373,165 +319,74 @@ function toLatex(raw) {
 
 function renderInput() {
   const div = document.getElementById("input-display");
-  if (!currentInput) { 
-    div.innerHTML = '<span style="color:#ccc; font-size:18px;">請輸入答案...</span>'; 
-    return; 
-  }
-  try {
-    katex.render(toLatex(currentInput), div, { throwOnError: false });
-  } catch(e) {
-    div.textContent = currentInput;
-  }
+  if (!currentInput) { div.innerHTML = '<span style="color:#ccc; font-size:18px;">請輸入答案...</span>'; return; }
+  try { katex.render(toLatex(currentInput), div, { throwOnError: false }); } catch(e) { div.textContent = currentInput; }
 }
 
 function normalizeStr(str) {
   if (!str || str.trim() === "") return "EMPTY_INPUT";
-  let s = str.replace(/\s+/g, ""); 
-  s = s.replace(/\^1(?!\d)/g, ""); 
-  if (!s) return "EMPTY_INPUT";
-
+  let s = str.replace(/\s+/g, "").replace(/\^1(?!\d)/g, ""); 
   if (!s.startsWith("-") && !s.startsWith("+")) s = "+" + s;
-  
-  let termRegex = /[+-][^+-]+/g;
-  let terms = s.match(termRegex);
+  let termRegex = /[+-][^+-]+/g, terms = s.match(termRegex);
   if (!terms) return "EMPTY_INPUT";
-
   let normalizedTerms = terms.map(t => {
-    let sign = t[0];
-    let body = t.substring(1);
-    
+    let sign = t[0], body = t.substring(1);
     if (body === "0") return "+0"; 
-
-    let parts = body.split("√");
-    let out = parts[0] || "";
-    let inn = parts[1] || "";
-
+    let parts = body.split("√"), out = parts[0] || "", inn = parts[1] || "";
     const process = (p, isOut, hasInn) => {
       if (!p) return "";
-      if (/[a-z][0-9]/.test(p)) return "INVALID_FORMAT";
-      let n = (p.match(/^\d+/) || [""])[0];
-      let v = (p.match(/[a-z](\^\d+)?/g) || []).sort().join("");
-
+      let n = (p.match(/^\d+/) || [""])[0], v = (p.match(/[a-z](\^\d+)?/g) || []).sort().join("");
       if (n === "1" && (v !== "" || (isOut && hasInn))) n = "";
       return n + v;
     };
-
-    let hasInn = parts.length > 1;
-    let normOut = process(out, true, hasInn);
-    let normInn = process(inn, false, false);
-
+    let hasInn = parts.length > 1, normOut = process(out, true, hasInn), normInn = process(inn, false, false);
     if (normOut === "" && !hasInn) normOut = "1";
-
     return sign + normOut + (hasInn ? "√" + normInn : "");
   });
-
-  if (normalizedTerms.includes("INVALID_FORMAT")) return "INVALID_FORMAT";
-
   normalizedTerms = normalizedTerms.filter(t => t !== "+0" && t !== "-0");
   if (normalizedTerms.length === 0) return "0";
-
   normalizedTerms.sort();
-
   let res = normalizedTerms.join("");
   if (res.startsWith("+")) res = res.substring(1);
   return res;
 }
 
-function insert(v) { 
-  if(locked || !gameStarted) return; 
-  currentInput += v; 
-  renderInput(); 
-}
-function backspace() { 
-  if(locked || !gameStarted || currentInput.length === 0) return; 
-  currentInput = currentInput.slice(0,-1); 
-  renderInput(); 
-}
-function clearAll() { 
-  if(locked || !gameStarted) return; 
-  currentInput = ""; 
-  renderInput(); 
-}
+function insert(v) { if(locked || !gameStarted) return; currentInput += v; renderInput(); }
+function backspace() { if(locked || !gameStarted || currentInput.length === 0) return; currentInput = currentInput.slice(0,-1); renderInput(); }
+function clearAll() { if(locked || !gameStarted) return; currentInput = ""; renderInput(); }
 
 function check() {
   if (locked || !gameStarted) return;
-  
   locked = true; 
   const checkBtn = document.getElementById("checkBtn");
-  if (checkBtn) {
-    checkBtn.disabled = true;
-    setTimeout(() => { if (checkBtn) checkBtn.disabled = false; }, 5000);
-  }
-
+  if (checkBtn) checkBtn.disabled = true;
   totalQ++;
   let userNorm = normalizeStr(currentInput), ansNorm = normalizeStr(ans);
-  
   if (userNorm === ansNorm && userNorm !== "EMPTY_INPUT") {
-    score = Math.max(0, score + currentMul); 
-    correctQ++; 
-    streak++;
-    const msgDom = document.getElementById("msg");
-    msgDom.textContent = "正確！ +" + currentMul;
-    
-    let gotLuck = false;
-    if (streak >= 3 && Math.random() < 0.5) gotLuck = true;
-    else if (streak === 2 && Math.random() < 0.1) gotLuck = true;
-    
-    if (gotLuck && luck < 2) { 
-      luck++; 
-      setTimeout(() => showMsg("幸運卡 +1！"), 1000); 
+    score += currentMul; correctQ++; streak++;
+    document.getElementById("msg").textContent = "正確！ +" + currentMul;
+    if ((streak >= 3 && Math.random() < 0.5) || (streak === 2 && Math.random() < 0.1)) {
+        if(luck < 2) { luck++; setTimeout(() => { document.getElementById("msg").textContent = "幸運卡 +1！"; }, 800); }
     }
-    
-    setTimeout(() => {
-        if(!locked || document.getElementById("nextBtn").style.display === "none") msgDom.textContent = "";
-    }, 1500);
     setTimeout(next, 1500);
-
   } else {
-    streak = 0; 
-    score = Math.max(0, score - currentMul);
+    streak = 0; score = Math.max(0, score - currentMul);
     const msgDom = document.getElementById("msg");
-    
     msgDom.innerHTML = '<span>答錯，正解：</span><span id="correct-ans-latex"></span>';
-    try {
-      katex.render(toLatex(ans), document.getElementById("correct-ans-latex"), { throwOnError: false });
-    } catch(e) {
-      document.getElementById("correct-ans-latex").textContent = ans.replace(/√([^+-]*)/g, "√($1)");
-    }
-    
+    katex.render(toLatex(ans), document.getElementById("correct-ans-latex"), { throwOnError: false });
     document.getElementById("nextBtn").style.display = "block";
   }
-  currentMul = 1; 
   updateUI();
-}
-
-function showMsg(text) {
-  const dom = document.getElementById("msg");
-  dom.textContent = text;
-  if (text.startsWith("正確") || text.includes("幸運卡 +1")) {
-    setTimeout(() => { if(!locked || document.getElementById("nextBtn").style.display === "none") dom.textContent = ""; }, 1500);
-  }
 }
 
 function next() {
-  locked = false; 
-  currentInput = ""; 
-  currentMul = 1;
+  locked = false; currentInput = ""; currentMul = 1;
   document.getElementById("nextBtn").style.display = "none";
   document.getElementById("msg").innerHTML = "";
-  
-  const checkBtn = document.getElementById("checkBtn");
-  if (checkBtn) checkBtn.disabled = false;
-  
-  let qText = (level===1?genType1():level===2?genType2():level===3?genType3():level===4?genType4():genType5());
-  try {
-    katex.render(toLatex(qText + " = ?"), document.getElementById("q"), { throwOnError: false });
-  } catch(e) {
-    document.getElementById("q").textContent = qText + " = ?";
-  }
-  
+  document.getElementById("checkBtn").disabled = false;
+  let qText = (level===1?genType1():level===2?genType2():level===3?genType3():level===4?genType4():level===5?genType5():genType6());
+  katex.render(toLatex(qText + " = ?"), document.getElementById("q"), { throwOnError: false });
   renderInput(); 
-  updateUI();
 }
 
 function updateUI() {
@@ -549,131 +404,68 @@ function setLevel(n) {
 }
 
 function updateStartBtn() {
-  const c = document.getElementById("className").value.trim();
-  const i = document.getElementById("studentId").value.trim();
-  const n = document.getElementById("studentName").value.trim();
-  document.getElementById("startBtn").disabled = !(c && i && n && level !== null);
+  const c = document.getElementById("className").value, i = document.getElementById("studentId").value, n = document.getElementById("studentName").value;
+  document.getElementById("startBtn").disabled = !(c && i && n && level);
 }
 
 function updateStudentList() {
-  const cname = document.getElementById("className").value;
-  const sel = document.getElementById("studentId");
-  const nameInput = document.getElementById("studentName");
-
-  sel.innerHTML = '<option value="">請選學號</option>';
-  nameInput.value = "";
-
-  if (!cname) {
-    sel.disabled = true;
-    updateStartBtn();
-    return;
-  }
-
+  const cname = document.getElementById("className").value, sel = document.getElementById("studentId"), nameInput = document.getElementById("studentName");
+  sel.innerHTML = '<option value="">請選學號</option>'; nameInput.value = "";
+  if (!cname) { sel.disabled = true; return; }
   sel.disabled = false;
-  const list = studentData[cname] || [];
-  list.forEach(s => {
-    const opt = document.createElement("option");
-    opt.value = s.id;
-    opt.textContent = s.id;
-    sel.appendChild(opt);
-  });
+  (studentData[cname] || []).forEach(s => { let opt = document.createElement("option"); opt.value = s.id; opt.textContent = s.id; sel.appendChild(opt); });
   updateStartBtn();
 }
 
 function autoFillName() {
-  const cname = document.getElementById("className").value;
-  const sid = document.getElementById("studentId").value;
-  const list = studentData[cname] || [];
-  const stu = list.find(s => s.id === sid);
+  const cname = document.getElementById("className").value, sid = document.getElementById("studentId").value;
+  const stu = (studentData[cname] || []).find(s => s.id === sid);
   document.getElementById("studentName").value = stu ? stu.name : "";
   updateStartBtn();
 }
 
 function startGame() { 
   gameStarted = true; 
-  document.getElementById("className").disabled = true;
-  document.getElementById("studentId").disabled = true;
-  document.getElementById("studentName").disabled = true;
-  document.getElementById("startBtn").disabled = true;
-  
+  ["className","studentId","studentName","startBtn"].forEach(id => document.getElementById(id).disabled = true);
   startTime = Date.now(); 
   timer = setInterval(() => { 
     let s = Math.floor((Date.now()-startTime)/1000); 
     document.getElementById("time").textContent = Math.floor(s/60).toString().padStart(2,'0') + ":" + (s%60).toString().padStart(2,'0'); 
   }, 1000); 
-  
   next(); 
 }
 
 function useLuck() { 
   if(!gameStarted || locked || luck < 1) return; 
-  luck--; 
-  currentMul = Math.random()>0.5 ? 2 : 3; 
+  luck--; currentMul = Math.random()>0.5 ? 2 : 3; 
   document.getElementById("msg").textContent = "幸運卡生效！本題分數 ×" + currentMul; 
   updateUI(); 
 }
 
-function getTotalSec() {
-  return startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
-}
-
 function uploadScore() {
-  if (!gameStarted) {
-    alert("請先開始答題");
-    return;
-  }
-
+  if (!gameStarted) return alert("請先開始答題");
   const uploadBtn = document.getElementById("uploadBtn");
   uploadBtn.disabled = true;
   let cooldown = 60;
-  uploadBtn.textContent = `冷卻 ${cooldown}s`;
-
   let cdTimer = setInterval(() => {
-    cooldown--;
-    if (cooldown <= 0) {
-      clearInterval(cdTimer);
-      uploadBtn.disabled = false;
-      uploadBtn.textContent = "上傳";
-    } else {
-      uploadBtn.textContent = `冷卻 ${cooldown}s`;
-    }
+    uploadBtn.textContent = `冷卻 ${--cooldown}s`;
+    if (cooldown <= 0) { clearInterval(cdTimer); uploadBtn.disabled = false; uploadBtn.textContent = "上傳"; }
   }, 1000);
-
-  const className = document.getElementById("className").value.trim();
-  const studentId = document.getElementById("studentId").value.trim();
-  const studentName = document.getElementById("studentName").value.trim();
-  const rateValue = totalQ === 0 ? "0" : (correctQ / totalQ * 100).toFixed(1);
-  const levelValue = level === 1 ? "題型一" : level === 2 ? "題型二" : level === 3 ? "題型三" : level === 4 ? "題型四" : "題型五";
-
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbyHFGxezML6QQsxvYDIR7t9nx28549ZcxukGITGCpSTH0dmJAYnOIcypGZrJKWELSUl/exec";
 
   const data = {
     action: "saveScore",
-    className: className,
-    studentId: studentId,
-    studentName: studentName,
-    score: score,
-    correct: correctQ,
-    rate: rateValue,
-    level: levelValue,
-    timeSec: getTotalSec()
+    className: document.getElementById("className").value,
+    studentId: document.getElementById("studentId").value,
+    studentName: document.getElementById("studentName").value,
+    score: score, correct: correctQ,
+    rate: totalQ === 0 ? "0" : (correctQ / totalQ * 100).toFixed(1),
+    level: "題型" + level,
+    timeSec: Math.floor((Date.now() - startTime) / 1000)
   };
 
-  fetch(GAS_URL, {
-    method: "POST",
-    mode: "no-cors",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
-  })
-  .then(() => {
-    alert("上傳成功！\n\n班級：" + className + "\n學號：" + studentId + "\n姓名：" + studentName + "\n分數：" + score + "\n答對題數：" + correctQ + "\n答對率：" + rateValue + "%");
-  })
-  .catch(() => {
-    alert("上傳失敗，請檢查網路");
-    clearInterval(cdTimer);
-    uploadBtn.disabled = false;
-    uploadBtn.textContent = "上傳";
-  });
+  fetch("https://script.google.com/macros/s/AKfycbyHFGxezML6QQsxvYDIR7t9nx28549ZcxukGITGCpSTH0dmJAYnOIcypGZrJKWELSUl/exec", {
+    method: "POST", mode: "no-cors", body: JSON.stringify(data)
+  }).then(() => alert("上傳成功！")).catch(() => { alert("上傳失敗"); clearInterval(cdTimer); uploadBtn.disabled = false; uploadBtn.textContent = "上傳"; });
 }
 </script>
 </body>
